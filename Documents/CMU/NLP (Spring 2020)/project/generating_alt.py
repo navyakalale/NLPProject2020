@@ -31,28 +31,36 @@ def getLabel(word):
 
     return ents[0].label_ if len(ents) > 0 else None
 
+def searchChunks(deps,chunks):
+    for chunk in chunks:
+        if chunk.root.dep_ in deps:
+            entity = chunk.text
+            start,end = chunk.start,chunk.end
+
+    return (start,end,reps[getLabel(entity)]) if entity else None
+
+def searchToks(deps,doc):
+    for i,tok in enumerate(doc):
+        if tok.dep_ in deps:
+            entity = tok.text
+            index = i
+    return (index,reps[getLabel(entity)]) if entity else None
 
 @curry2
 def replace(deps,doc):
     words = toWords(doc)
     entity = None
-    for chunk in doc.noun_chunks:
-        if chunk.root.dep_ in deps:
-            entity = chunk.text
-            start,end = chunk.start,chunk.end
-    if entity:
-        words[start:end] = [reps[getLabel(entity)]]
+    a,b = searchChunks(deps,doc.noun_chunks),searchToks(deps,doc)
+    if a:
+        start,end,rep = a
+        words[start:end] = [rep]
         return words
-    else:
-        for i,tok in enumerate(doc):
-            if tok.dep_ in deps:
-                entity = tok.text
-        if entity:
-            words[i] = reps[getLabel(entity)]
-            return words
+    if b:
+        i,rep = b
+        words[i] = rep
+        return words
 
-        else:
-            return None
+    return None
 
 subj = ['nsubj','nsubjpass','csubj','csubjpass']
 obj  = ['dobj','iobj','pobj']
