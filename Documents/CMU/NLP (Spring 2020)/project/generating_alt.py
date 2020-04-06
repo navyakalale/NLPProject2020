@@ -37,6 +37,7 @@ def searchChunks(deps,chunks):
         if chunk.root.dep_ in deps:
             entity = chunk.text
             start,end = chunk.start,chunk.end
+            break
 
     return (start,end,reps[getLabel(entity)]) if entity else None
 
@@ -46,6 +47,7 @@ def searchToks(deps,doc):
         if tok.dep_ in deps:
             entity = tok.text
             index = i
+            break
     return (index,reps[getLabel(entity)]) if entity else None
 
 @curry2
@@ -73,5 +75,11 @@ replaceObject = replace(obj)
 def applyReplace(rep,txts):
     return [' '.join(x) for x in [rep(x) for x in txts] if x]
 
-print(applyReplace(replaceSubject,txts))
-print(applyReplace(replaceObject,txts))
+with open('data/set1/a1.txt') as f:
+    text = f.read()
+
+sents = [nlp(s.text) for s in nlp(text).sents]
+
+for s in applyReplace(replaceSubject,sents):
+    print(s)
+
