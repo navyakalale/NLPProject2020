@@ -99,5 +99,5 @@ sents = [nlp(s.text) for s in nlp(text).sents]
 sentstext = [s.text for s in nlp(text).sents]
 
 for s in applyReplace(replaceSubject,sentstext,int(sys.argv[2])):
-    print(s)
+    print(s.strip())
 
