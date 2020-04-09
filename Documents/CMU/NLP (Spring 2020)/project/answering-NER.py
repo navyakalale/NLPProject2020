@@ -302,17 +302,6 @@ def find_sentence_words_by_question(question_word, question_tag, question, sente
     #print("sentence words", sentence_words, sentence_tag_words)
     return (sentence_words, sentence_tag_words)
 
-
-# In[13]:
-
-
-#res = find_sentence_words_by_question(get_question_word(tagged_q_sentence)[0], get_question_word(tagged_q_sentence)[1],
-#                                      q, txt_answer)
-
-
-# In[14]:
-
-
 def convertListToString(L):
     res = ""
     for i in range(len(L)):
@@ -322,8 +311,6 @@ def convertListToString(L):
             res += " " + L[i]
     return res
 
-
-# In[15]:
 
 
 if __name__ == "__main__":
@@ -357,4 +344,4 @@ if __name__ == "__main__":
                                               q, txt_answer)
 
         print(convertListToString(res[0]))
-        #print("\n")
+
