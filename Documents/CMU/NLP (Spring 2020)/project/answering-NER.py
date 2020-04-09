@@ -143,6 +143,8 @@ def find_sentence_words_by_question(question_word, question_tag, question, sente
 
     tags_to_find = qword_dict.get(question_word, '')
     processed_sent = process_sentence(sentence_txt)[1]
+    sentence_words = []
+    sentence_tag_words = []
     #print(processed_sent)
 
     for i in range(len(processed_sent)):
