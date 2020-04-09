@@ -5,10 +5,10 @@ import sys
 import re
 import nltk
 #nltk.download('all-nltk')
-#nltk.download('punkt')
-#nltk.download('averaged_perceptron_tagger')
-#nltk.download('maxent_ne_chunker')
-#nltk.download('words')
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('maxent_ne_chunker')
+nltk.download('words')
 from nltk import sent_tokenize, word_tokenize, pos_tag, ne_chunk
 from nltk import ngrams
 import numpy
@@ -346,3 +346,4 @@ if __name__ == "__main__":
                                               q, txt_answer)
 
         print(convertListToString(res[0]))
+
