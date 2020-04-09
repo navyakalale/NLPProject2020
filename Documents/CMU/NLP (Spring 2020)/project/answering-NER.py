@@ -1,7 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding: utf-8
 
 import sys
+import re
 import nltk
 #nltk.download('all-nltk')
 nltk.download('punkt')
@@ -60,6 +61,7 @@ def find_sentence_in_txt_by_question(text_sentences_list, question_sentence):
             best_sentence = sentence
             best_num_matching = curr_matching
 
+    #print(best_sentence)
     return best_sentence
 
 
@@ -79,9 +81,19 @@ def process_sentence(sentence):
     # get full output
     named_ent_list += question_ne_list
     res = (str(named_ent).split("\n  "))
+    new_res = []
+    for i in range(len(res)):
+        word = res[i]
+        word = word.strip('()')
+        if " " in word:
+            l = word.split(" ")
+            word = l[1]
+            #print(word)
+            new_res.append(word)
+        else: new_res.append(word)
 
-    # print((named_ent_list, res))
-    return (named_ent_list, res)
+    #print("processed sent", (named_ent_list, res))
+    return (named_ent_list, new_res)
 
 
 
@@ -93,6 +105,16 @@ def get_question_word(tagged_question_sentence):
     for word in tagged_list:
         # print(word.split("/"))
         # print(word)
+        word = word.strip('()')
+        if " " in word:
+            l = word.split(" ")
+            word = l[1]
+
+        wlist = word.split("/")
+        if len(wlist) >= 2:
+            w = wlist[0]
+            tag = wlist[1]
+
         wlist = word.split("/")
         if len(wlist) >= 2:
             w = wlist[0]
@@ -100,43 +122,90 @@ def get_question_word(tagged_question_sentence):
             if tag in q_tags:
                 question_word = w
                 q_tag_word = tag
-    return (question_word, q_tag_word)
+    #print("question word", question_word, q_tag_word)
+    return (question_word.lower(), q_tag_word)
 
 
 
 def find_sentence_words_by_question(question_word, question_tag, question, sentence_txt):
-    tag_dict = {'WP': ['NNP'], 'WDT': ['JJ', 'NNP']}
-    # print(question_tag)
-    question_words = question.split("?")[0].split()
-    # print(question_words)
-    tags_to_find = tag_dict[question_tag]
-    processed_sent = process_sentence(sentence_txt)[1]
-    # print(processed_sent)
-    sentence_words = []
-    sentence_tag_words = []
-    if question_word.lower() == 'which':
-        w_to_find_idx = question_words.index('which') + 1
-        w_to_find = question_words[w_to_find_idx]
-        w_to_find_is_plural = False
-        if w_to_find[-1] == 's':
-            # print("isplural")
-            w_to_find_is_plural = True
-        # print(w_to_find)
+    qword_dict = {'who': ['NNP'], 'which': ['JJ', 'NNP'], 'what': ['NNP'],
+                  'when': ['NNP', 'CD'], 'where': ['NNP'], 'how': ['CD'],
+                  'why': ['IN'], '':['NNP']}
 
-        for i in range(len(processed_sent)):
-            if i >= 1:
-                prevword = processed_sent[i - 1]
-                prevwlist = prevword.split("/")
-                if len(prevwlist) >= 2:
-                    prevw = prevwlist[0].lower()
-                    prevtag = prevwlist[1].split(" ")[0]
-            if i < (len(processed_sent) - 1):
-                nextword = processed_sent[i + 1]
-                nextwlist = nextword.split("/")
-                if len(nextwlist) >= 2:
-                    nextw = nextwlist[0].lower()
-                    nexttag = nextwlist[1].split(" ")[0]
-                    # print(nexttag)
+    question_words = question.lower().split("?")[0].split()
+    #remove commas
+    for i in range(len(question_words)):
+        word = question_words[i]
+        if "," in word:
+            l = word.split(",")
+            word = l[0]
+            question_words[i] = word
+
+    tags_to_find = qword_dict.get(question_word, '')
+    processed_sent = process_sentence(sentence_txt)[1]
+    #print(processed_sent)
+
+    for i in range(len(processed_sent)):
+        #get prev and next word
+        if i >= 1:
+            prevword = processed_sent[i - 1]
+            prevwlist = prevword.split("/")
+            if len(prevwlist) >= 2:
+                prevw = prevwlist[0]
+                prevtag = prevwlist[1].split(" ")[0]
+            else:
+                prevw = ","
+                prevtag = ","
+
+        if i >= 2:
+            prev_prevword = processed_sent[i - 2]
+            prev_prevwlist = prev_prevword.split("/")
+            if len(prev_prevwlist) >= 2:
+                prev_prevw = prev_prevwlist[0]
+                prev_prevtag = prev_prevwlist[1].split(" ")[0]
+            else:
+                prev_prevw = ","
+                prev_prevtag = ","
+
+        if i < (len(processed_sent) - 1):
+            nextword = processed_sent[i + 1]
+            nextwlist = nextword.split("/")
+            if len(nextwlist) >= 2:
+                nextw = nextwlist[0]
+                nexttag = nextwlist[1].split(" ")[0]
+
+            else:
+                nextw = ","
+                nexttag = ","
+
+        if i < (len(processed_sent) - 2):
+            next_nextword = processed_sent[i + 2]
+            next_nextwlist = next_nextword.split("/")
+            if len(next_nextwlist) >= 2:
+                next_nextw = next_nextwlist[0]
+                next_nexttag = next_nextwlist[1].split(" ")[0]
+            else:
+                next_nextw = ","
+                next_nexttag = ","
+
+        if i < (len(processed_sent) - 3):
+            next3_word = processed_sent[i + 3]
+            next3_wlist = next3_word.split("/")
+            if len(next3_wlist) >= 2:
+                next3_w = next3_wlist[0]
+                next3_tag = next3_wlist[1].split(" ")[0]
+            else:
+                next3_w = ","
+                next3_tag = ","
+
+        if question_word.lower() == 'which':
+            w_to_find_idx = question_words.index('which') + 1
+            w_to_find = question_words[w_to_find_idx]
+            w_to_find_is_plural = False
+            if w_to_find[-1] == 's':
+                # print("isplural")
+                w_to_find_is_plural = True
+            # print(w_to_find)
 
             word = processed_sent[i]
             wlist = word.split("/")
@@ -149,59 +218,88 @@ def find_sentence_words_by_question(question_word, question_tag, question, sente
                         if (not w_to_find_is_plural):
                             return ([prevw], [prevtag])
                         else:
-                            res_words = [prevw]
-                            res_tags = [prevtag]
-                            j = 2
-                            prev_prevtag = prevtag
-                            while (prevtag == prev_prevtag):
-                                if (i - j >= 0):
-                                    prev_prevw = processed_sent[i - j]
-                                    prev_prevwlist = prevword.split("/")
-                                    if len(prev_prevwlist) >= 2:
-                                        prev_prevw = prevwlist[0].lower()
-                                        prev_prevtag = prevwlist[1]
-                                        res_words = [prev_prevw] + res_words
-                                        res_tags = [prev_prevtag] + res_tags
-                                    j += 1
-                            return (res_words, res_tags)
+                            for word in processed_sent[:i]:
+                                wlist = word.split("/")
+                                if len(wlist) >= 2:
+                                    w = wlist[0]
+                                    tag = wlist[1]
+                                    # print(tag)
+                                    if tag == 'NNP' and w.lower() not in question_words:
+                                        sentence_words.append(w)
+                                        sentence_tag_words.append(tag)
+                            # print("sentence words", sentence_words, sentence_tag_words)
+                            return (sentence_words, sentence_tag_words)
 
                     elif nexttag in tags_to_find:
-                        # print("herenexttag")
                         if (not w_to_find_is_plural):
                             return ([nextw], [nexttag])
                         else:
-                            res_words = [nextw]
-                            res_tags = [nexttag]
-                            j = 2
-                            next_nexttag = nexttag
-                            while (nexttag == next_nexttag):
-                                # print("here")
-                                if (i + j < len(processed_sent)):
-                                    next_nextw = processed_sent[i + j]
-                                    next_nextwlist = prevword.split("/")
-                                    if len(next_nextwlist) >= 2:
-                                        next_nextw = nextwlist[0].lower()
-                                        next_nexttag = nextwlist[1]
-                                        res_words = [next_nextw] + res_words
-                                        res_tags = [next_nexttag] + res_tags
-                                    j += 1
-                            return (res_words, res_tags)
+                            for word in processed_sent[i:]:
+                                wlist = word.split("/")
+                                if len(wlist) >= 2:
+                                    w = wlist[0]
+                                    tag = wlist[1]
+                                    # print(tag)
+                                    if tag == 'NNP' and w.lower() not in question_words:
+                                        sentence_words.append(w)
+                                        sentence_tag_words.append(tag)
+                            # print("sentence words", sentence_words, sentence_tag_words)
+                            return (sentence_words, sentence_tag_words)
 
-                    else:
+        if question_word.lower() == 'who' or question_word.lower() == 'what':
+            w_to_find_idx = question_words.index(question_word.lower()) + 1
+            w_to_find = question_words[w_to_find_idx]
+            #print(w_to_find)
+            #print(processed_sent[i])
+            wlist = processed_sent[i].split("/")
+            if len(wlist) >= 2:
+                w = wlist[0]
+                tag = wlist[1]
+                if w.lower() == w_to_find:
+                    if prevtag in tags_to_find:
                         return ([prevw], [prevtag])
-                        # break
 
+                    elif (nexttag in tags_to_find):
+                        return ([nextw], [nexttag])
+                    else:
+                        break
+
+        if question_word.lower() == 'when':
+            wlist = processed_sent[i].split("/")
+            if len(wlist) >= 2:
+                w = wlist[0]
+                tag = wlist[1]
+                if tag in tags_to_find and prevtag == 'IN':
+                    if nexttag in tags_to_find:
+                        if next_nextw == ",":
+                            return ([w, nextw, next3_w], [tag, nexttag, next3_tag])
+                        else: return ([w, nextw], [tag, nexttag])
+                    else: return ([w], [tag])
+
+        if question_word.lower() == 'why':
+            wlist = processed_sent[i].split("/")
+            if len(wlist) >= 2:
+                w = wlist[0]
+                tag = wlist[1]
+                if (w == 'because' or w == 'since'):
+                        return ([w, nextw, next_nextw, next3_w], [tag, nexttag, next_nexttag, next3_tag])
+
+
+    sentence_words = []
+    sentence_tag_words = []
     for word in processed_sent:
-        # print(word.split("/"))
-        # print(word)
+        word = word.strip('()')
+        if " " in word:
+            l = word.split(" ")
+            word = l[1]
         wlist = word.split("/")
         if len(wlist) >= 2:
             w = wlist[0]
             tag = wlist[1]
-            # print(tag)
-            if tag in tags_to_find and w not in question_words:
+            if (tag in tags_to_find) and (w.lower() not in question_words):
                 sentence_words.append(w)
                 sentence_tag_words.append(tag)
+    #print("sentence words", sentence_words, sentence_tag_words)
     return (sentence_words, sentence_tag_words)
 
 
@@ -260,4 +358,3 @@ if __name__ == "__main__":
 
         print(convertListToString(res[0]))
         #print("\n")
-
