@@ -17,14 +17,18 @@ def curry2(f):
 
 #Maps word types to the apprioate question wh-word
 reps = defaultdict(lambda:'what',
-    {'ORG':'which organization',
+    {'ORG':'who',
      'MONEY':'how much',
-     'GPE':'what',
+     'GPE':'who',
      'PERSON':'who',
      'LOC':'where',
      'DATE':'when'
     })
 
+
+labelRank = defaultdict(lambda:2,{'PERSON':0,'LOC':0,'DATE':0,'GPE':1,'MONEY':1,'ORG':1})
+
+labels = {}
 
 def toWords(doc):
     return [tok.text for tok in doc]
@@ -42,7 +46,7 @@ def searchChunks(deps,chunks):
             start,end = chunk.start,chunk.end
             break
 
-    return (start,end,reps[getLabel(entity)]) if entity else None
+    return (start,end,reps[labels[entity]],labelRank[labels[entity]]) if entity else None
 
 def searchToks(deps,doc):
     entity = None
@@ -51,7 +55,7 @@ def searchToks(deps,doc):
             entity = tok.text
             index = i
             break
-    return (index,reps[getLabel(entity)]) if entity else None
+    return (index,reps[labels[entity]],labelRank[labels[entity]]) if entity else None
 
 @curry2
 def replace(deps,doc):
@@ -63,20 +67,29 @@ def replace(deps,doc):
     entity = None
     a,b = searchChunks(deps,splitatcommasnlp.noun_chunks),searchToks(deps,splitatcommasnlp)
     if a:
-        start,end,rep = a
+        start,end,rep,rank = a
+
+        if words[start] in ('The','the'):
+            rep = 'what'
+        '''
         words[start:end] = [""]
+        if end >= len(words):
+            return None
         if(start==0):
             if(nlp(words[end])[0].pos_ == "CCONJ" or nlp(words[end])[0].pos_ == "ADP"):
                 return None
         else:
             if(nlp(words[0])[0].pos_ == "CCONJ" or nlp(words[0])[0].pos_ == "ADP"):
                 return None
+
         words = [rep] + words
-        return words
+        '''
+        words[start:end] = [rep]
+        return (words,rank)
     if b:
-        i,rep = b
+        i,rep,rank = b
         words[i] = rep
-        return words
+        return (words,rank)
 
     return None
 
@@ -90,16 +103,26 @@ def sortingFunc(e):
   return len(e)
 
 def applyReplace(rep,txts,n):
-    arr = [' '.join(x) for x in [rep(x) for x in txts] if x]
-    arr.sort(key=sortingFunc)
+    arr = [(' '.join(x[0]),x[1]) for x in [rep(x) for x in txts] if x]
+    arr.sort(key=lambda p:p[1]*100 + len(p[0]))
+    #arr = [words for (words,rank) in arr]
     return arr[0:n]
+
+
 
 with open(sys.argv[1]) as f:
     text = f.read()
 
-sents = [nlp(s.text) for s in nlp(text).sents]
-sentstext = [s.text for s in nlp(text).sents]
+parsed = nlp(text)
+sents = [nlp(s.text) for s in parsed.sents]
+sentstext = [s.text for s in parsed.sents]
+
+labels = defaultdict(lambda:None,{x.text:x.label_ for x in parsed.ents})
 
 for s in applyReplace(replaceSubject,sentstext,int(sys.argv[2])):
-    print(s.strip())
+    (s,r) = s
+    s = s.strip()
+    if s.count('\n') > 1 or '   ' in s:
+        continue
+    print(s)
 
