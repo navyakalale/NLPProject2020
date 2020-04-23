@@ -26,6 +26,8 @@ reps = defaultdict(lambda:'what',
     })
 
 
+label2Rank = defaultdict(lambda:1,{'VERB':0})
+
 labelRank = defaultdict(lambda:2,{'PERSON':0,'LOC':0,'DATE':0,'GPE':1,'MONEY':1,'ORG':1})
 
 labels = {}
@@ -71,6 +73,15 @@ def replace(deps,doc):
 
         if words[start] in ('The','the'):
             rep = 'what'
+        if start != 0 and end != (len(words) - 1):
+            if(words[start - 1] == "[" or words[start - 1] == "("):
+                words[start - 1] = ""
+                words[end] = ""
+
+        rank2 = 1
+        if end < (len(words) - 1):
+            if(len(nlp(words[end])) > 0):
+                rank2 = label2Rank[nlp(words[end])[0].pos_]
         '''
         words[start:end] = [""]
         if end >= len(words):
@@ -85,11 +96,15 @@ def replace(deps,doc):
         words = [rep] + words
         '''
         words[start:end] = [rep]
-        return (words,rank)
+        return (words,rank,rank2)
     if b:
         i,rep,rank = b
         words[i] = rep
-        return (words,rank)
+        rank2 = 1
+        if i+1 < (len(words) - 1):
+            if(len(nlp(words[i+1])) > 0):
+                rank2 = label2Rank[nlp(words[i+1])[0].pos_]
+        return (words,rank,rank2)
 
     return None
 
@@ -103,8 +118,8 @@ def sortingFunc(e):
   return len(e)
 
 def applyReplace(rep,txts,n):
-    arr = [(' '.join(x[0]),x[1]) for x in [rep(x) for x in txts] if x]
-    arr.sort(key=lambda p:p[1]*100 + len(p[0]))
+    arr = [(' '.join(x[0]),x[1],x[2]) for x in [rep(x) for x in txts] if x]
+    arr.sort(key=lambda p:p[2]*1000+p[1]*100 + len(p[0]))
     #arr = [words for (words,rank) in arr]
     return arr[0:n]
 
@@ -120,7 +135,7 @@ sentstext = [s.text for s in parsed.sents]
 labels = defaultdict(lambda:None,{x.text:x.label_ for x in parsed.ents})
 
 for s in applyReplace(replaceSubject,sentstext,int(sys.argv[2])):
-    (s,r) = s
+    (s,r,r2) = s
     s = s.strip()
     if s.count('\n') > 1 or '   ' in s:
         continue
