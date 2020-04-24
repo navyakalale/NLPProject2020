@@ -5,24 +5,18 @@ import sys
 from collections import defaultdict
 
 nlp = spacy.load("en_core_web_sm")
-txt1 = "Autonomous cars shift insurance liability toward manufacturers"
-txt2 = "Pittsburgh is a city in the state of Pennsylvania in the United States, and is the county seat of Allegheny County."
-txt3 = "1999 is the year Matthew McQuaid was born"
-txt4 = "Matthew McQuaid was born in 1999"
-
-txts = [nlp(x) for x in (txt1,txt2,txt3,txt4)]
 
 def curry2(f):
     return lambda x:lambda y:f(x,y)
 
 #Maps word types to the apprioate question wh-word
-reps = defaultdict(lambda:'what',
-    {'ORG':'who',
-     'MONEY':'how much',
-     'GPE':'who',
-     'PERSON':'who',
-     'LOC':'where',
-     'DATE':'when'
+reps = defaultdict(lambda:'What',
+    {'ORG':'Who',
+     'MONEY':'How much',
+     'GPE':'Who',
+     'PERSON':'Who',
+     'LOC':'Where',
+     'DATE':'When'
     })
 
 
@@ -72,7 +66,7 @@ def replace(deps,doc):
         start,end,rep,rank = a
 
         if words[start] in ('The','the'):
-            rep = 'what'
+            rep = 'What'
         if start != 0 and end != (len(words) - 1):
             if(words[start - 1] == "[" or words[start - 1] == "("):
                 words[start - 1] = ""
@@ -80,21 +74,10 @@ def replace(deps,doc):
 
         rank2 = 1
         if end < (len(words) - 1):
-            if(len(nlp(words[end])) > 0):
-                rank2 = label2Rank[nlp(words[end])[0].pos_]
-        '''
-        words[start:end] = [""]
-        if end >= len(words):
-            return None
-        if(start==0):
-            if(nlp(words[end])[0].pos_ == "CCONJ" or nlp(words[end])[0].pos_ == "ADP"):
-                return None
-        else:
-            if(nlp(words[0])[0].pos_ == "CCONJ" or nlp(words[0])[0].pos_ == "ADP"):
-                return None
+            last = nlp(words[end])
+            if(len(last) > 0):
+                rank2 = label2Rank[last[0].pos_]
 
-        words = [rep] + words
-        '''
         words[start:end] = [rep]
         return (words,rank,rank2)
     if b:
@@ -102,8 +85,9 @@ def replace(deps,doc):
         words[i] = rep
         rank2 = 1
         if i+1 < (len(words) - 1):
-            if(len(nlp(words[i+1])) > 0):
-                rank2 = label2Rank[nlp(words[i+1])[0].pos_]
+            last = nlp(words[i+1])
+            if(len(last) > 0):
+                rank2 = label2Rank[last[0].pos_]
         return (words,rank,rank2)
 
     return None
@@ -114,13 +98,22 @@ obj  = ['dobj','iobj','pobj']
 replaceSubject = replace(subj)
 replaceObject = replace(obj)
 
-def sortingFunc(e):
-  return len(e)
+def whFront(s):
+    for w in reps.values():
+        if s.startswith(w):
+            return True
+    return False
 
 def applyReplace(rep,txts,n):
-    arr = [(' '.join(x[0]),x[1],x[2]) for x in [rep(x) for x in txts] if x]
+    arr = []
+    for x in [rep(x) for x in txts]:
+        if x:
+            if x[0][-1] == '.':
+                x[0][-1] = '?'
+            arr += [(' '.join(x[0]),x[1],x[2])]
+    #arr = [(' '.join(x[0]),x[1],x[2]) for x in [rep(x) for x in txts] if x]
     arr.sort(key=lambda p:p[2]*1000+p[1]*100 + len(p[0]))
-    #arr = [words for (words,rank) in arr]
+    arr = [p for p in arr if p[0].count('\n') < 1 and '   ' not in p[0] and whFront(p[0])]
     return arr[0:n]
 
 
@@ -137,7 +130,5 @@ labels = defaultdict(lambda:None,{x.text:x.label_ for x in parsed.ents})
 for s in applyReplace(replaceSubject,sentstext,int(sys.argv[2])):
     (s,r,r2) = s
     s = s.strip()
-    if s.count('\n') > 1 or '   ' in s:
-        continue
     print(s)
 
