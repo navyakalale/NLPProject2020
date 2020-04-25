@@ -14,7 +14,8 @@ from nltk import ngrams
 import numpy
 
 def find_sentence_in_txt_by_question(text_sentences_list, question_sentence):
-    q_tokenize = nltk.word_tokenize(question_sentence)
+    question_sentence1 = question_sentence.lower()
+    q_tokenize = nltk.word_tokenize(question_sentence1)
     q_onegrams = list(ngrams(q_tokenize, 1))
     q_bigrams = list(ngrams(q_tokenize, 2))
     q_trigrams = list(ngrams(q_tokenize, 3))
@@ -30,7 +31,8 @@ def find_sentence_in_txt_by_question(text_sentences_list, question_sentence):
     longest_matching_str = ""
     # print(text_sentences_list)
     for sentence in text_sentences_list:
-        txt_tokenize = nltk.word_tokenize(sentence)
+        sentence1 = sentence.lower()
+        txt_tokenize = nltk.word_tokenize(sentence1)
         txt_onegrams = list(ngrams(txt_tokenize, 1))
         txt_bigrams = list(ngrams(txt_tokenize, 2))
         txt_trigrams = list(ngrams(txt_tokenize, 3))
@@ -212,11 +214,13 @@ def find_sentence_words_by_question(question_word, question_tag, question, sente
                 next3_tag = next3_wlist[1].split(" ")[0]
 
         if question_word.lower() == 'which':
+            w_to_find = ''
             #print(question_words)
-            idx = question_words.index(question_word.lower())
-            if (idx < len(question_words) - 1):
-                w_to_find_idx = idx + 1
-                w_to_find = question_words[w_to_find_idx]
+            if question_word.lower() in question_words:
+                idx = question_words.index(question_word.lower())
+                if (idx < len(question_words) - 1):
+                    w_to_find_idx = idx + 1
+                    w_to_find = question_words[w_to_find_idx]
 
             w_to_find_is_plural = False
             if w_to_find[-1] == 's':
@@ -267,42 +271,44 @@ def find_sentence_words_by_question(question_word, question_tag, question, sente
 
 
         if question_word.lower() == 'who':
-            idx = question_words.index(question_word.lower())
-            if (idx < len(question_words) - 1):
-                w_to_find_idx = idx + 1
-                w_to_find = question_words[w_to_find_idx]
-            #print(w_to_find)
-            #print(processed_sent[i])
-            wlist = processed_sent[i].split("/")
-            if len(wlist) >= 2:
-                w = wlist[0]
-                tag = wlist[1]
-                if w.lower() == w_to_find:
-                    if (nexttag in tags_to_find):
-                        return ([nextw], [nexttag])
-                    elif prevtag in tags_to_find:
-                        return ([prevw], [prevtag])
-                    else: continue
+            if question_word.lower() in question_words:
+                idx = question_words.index(question_word.lower())
+                if (idx < len(question_words) - 1):
+                    w_to_find_idx = idx + 1
+                    w_to_find = question_words[w_to_find_idx]
+                    #print(w_to_find)
+                    #print(processed_sent[i])
+                    wlist = processed_sent[i].split("/")
+                    if len(wlist) >= 2:
+                        w = wlist[0]
+                        tag = wlist[1]
+                        if w.lower() == w_to_find:
+                            if (nexttag in tags_to_find):
+                                return ([nextw], [nexttag])
+                            elif prevtag in tags_to_find:
+                                return ([prevw], [prevtag])
+                            else: continue
 
         if question_word.lower() == 'what':
             w_to_find = ''
-            idx = question_words.index(question_word.lower())
-            if (idx < len(question_words)-1):
-                w_to_find_idx = idx + 1
-                w_to_find = question_words[w_to_find_idx]
+            if question_word.lower() in question_words:
+                idx = question_words.index(question_word.lower())
+                if (idx < len(question_words)-1):
+                    w_to_find_idx = idx + 1
+                    w_to_find = question_words[w_to_find_idx]
 
-            # print(processed_sent[i])
-            wlist = processed_sent[i].split("/")
-            if len(wlist) >= 2:
-                w = wlist[0]
-                tag = wlist[1]
-                if w.lower() == w_to_find:
-                    if (nexttag in tags_to_find and nextword not in question_words):
-                        return ([nextw], [nexttag])
-                    elif prevtag in tags_to_find and prevw not in question_words:
-                        return ([prevw], [prevtag])
-                    else:
-                        break
+                    # print(processed_sent[i])
+                    wlist = processed_sent[i].split("/")
+                    if len(wlist) >= 2:
+                        w = wlist[0]
+                        tag = wlist[1]
+                        if w.lower() == w_to_find:
+                            if (nexttag in tags_to_find and nextword not in question_words):
+                                return ([nextw], [nexttag])
+                            elif prevtag in tags_to_find and prevw not in question_words:
+                                return ([prevw], [prevtag])
+                            else:
+                                continue
 
         if question_word.lower() == 'when' or question_word.lower() == 'where':
             wlist = processed_sent[i].split("/")
@@ -312,7 +318,7 @@ def find_sentence_words_by_question(question_word, question_tag, question, sente
                 if tag in tags_to_find and prevtag == 'IN' and w.lower() not in question_words:
                     if nexttag in tags_to_find and nextw.lower() not in question_words:
                         if next_nexttag in tags_to_find and next_nextw.lower() not in question_words:
-                            return ([w, nextw, next_nextw], [tag, nexttag, next_nexttag])
+                            return ([w, nextw, ",", next_nextw], [tag, nexttag, ",", next_nexttag])
                         else: return ([w, nextw], [tag, nexttag])
                     else: return ([w], [tag])
 
@@ -354,7 +360,9 @@ def convertListToString(L):
         if i == 0:
             res = L[i]
         else:
-            res += " " + L[i]
+            if L[i] == ",":
+                res += L[i]
+            else: res += " " + L[i]
     return res
 
 
