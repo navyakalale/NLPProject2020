@@ -344,7 +344,8 @@ def find_sentence_words_by_question(question_word, question_tag, question, sente
                 sentence_tag_words.append(tag)
 
     #print("sentence words", sentence_words, sentence_tag_words)
-    if len(sentence_words) != 0: return (sentence_words, sentence_tag_words)
+    if len(sentence_words) <= 6 and len(sentence_words) > 0: return (sentence_words, sentence_tag_words)
+    elif len(sentence_words) > 6: return (sentence_txt.split(), [])
     else: return (['idk'], ['CD'])
 
 def convertListToString(L):
